@@ -7,7 +7,7 @@ export const Person = ({name, married, age, gender, walk}) => {
         <div>married: {married}</div>
         <div>age: {age}</div>
         <div>gender: {gender}</div>
-        <button onClick={walk}>walk</button>
+        <button marginBottom={Layout.L} onClick={walk}>walk</button>
     </div>);
 }
 
@@ -17,4 +17,6 @@ Person.propTypes = {
     age: PropTypes.number,
     gender: PropTypes.oneOf(['male', 'female', 'neutral']),
     walk: PropTypes.func,
+    surname: PropTypes.string.isRequired,
+    handed: PropTypes.oneOf(['left', 'right']).isRequired,
 };

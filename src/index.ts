@@ -17,11 +17,18 @@ const expressions: Array<Node> = ast.body.filter(({type}: Node) => type === 'Exp
 
 const fileContent: Record<string, string> = {};
 
-const propToType: Record<string, string> = {
-    bool: 'boolean',
-    number: 'number',
-    string: 'string',
-    func: '() => void',
+const enum PropertyType {
+    BOOLEAN = 'boolean',
+    NUMBER = 'number',
+    STRING = 'string',
+    FUNCTION = '() => void',
+}
+
+const propToType: Record<string, PropertyType> = {
+    bool: PropertyType.BOOLEAN,
+    number: PropertyType.NUMBER,
+    string: PropertyType.STRING,
+    func: PropertyType.FUNCTION,
 }
 
 const getTypeForOneOf = (property = '', values = []): string => {
@@ -30,19 +37,46 @@ const getTypeForOneOf = (property = '', values = []): string => {
     return typeName;
 }
 
-const getTypeForNode = (property = '', node: Node): string => {
+interface Property {
+    name: string;
+    type: PropertyType | string;
+    mandatory: boolean;
+}
+
+
+const getTypeForNode = (property = '', node: Node): Property => {
     if (node.type === 'CallExpression' && node.callee.property.name === 'oneOf') {
-        return getTypeForOneOf(property, node.arguments[0].elements)
+        return {
+            name: property,
+            mandatory: false,
+            type: getTypeForOneOf(property, node.arguments[0].elements),
+        }
     } else {
-        return propToType[node.property.name ];
+        if (node.property.name === 'isRequired') {
+            return {
+                name: property,
+                type: node.object.type === 'CallExpression'
+                    ? getTypeForOneOf(property, node.object.arguments[0].elements)
+                    : propToType[node.object.property.name],
+                mandatory: true,
+            }
+        }
+        return {
+            name: property,
+            type: propToType[node.property.name],
+            mandatory: false,
+        };
     }
 }
 
+const propertyToString = ({name, mandatory, type}: Property): string => {
+    return `${name}${mandatory ? '' : '?'}: ${type}`;
+}
 
 const buildInterface = (interfaceName: string, properties: Array<Node>) => {
   const newInterface = `
 export interface ${interfaceName} {
-  ${properties.map((prop) => `${prop.key.name}: ${getTypeForNode(prop.key.name, prop.value)}`).join(';\n  ')}
+  ${properties.map((prop) => `${propertyToString(getTypeForNode(prop.key.name, prop.value))}`).join(';\n  ')}
 }`
     fileContent[interfaceName] = newInterface;
 };
@@ -51,12 +85,10 @@ expressions.forEach(({expression}) => {
     const {left: {object: {name: className}, property}, right} = expression;
     if (property.name === 'propTypes') {
         buildInterface(className, right.properties);
-        fs.writeFileSync(`${__dirname}/../generated/index.${new Date().toISOString()}.d.ts`, Object.values(fileContent).join('\n\n'))
+        const fileName = FILE_NAME.split('/').pop();
+        const tsFileName = fileName.replace('.jsx', '.ts');
+        fs.writeFileSync(`${__dirname}/../generated/${tsFileName}`, Object.values(fileContent).join('\n\n'));
     }
 });
 
-
-
-console.log(ast.childNodes);
-
-
+console.log('Done writing file');
