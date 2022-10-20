@@ -6,8 +6,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "clean": "rm -rf dist && rm -rf generated/*",
+    "clean": "rm -rf dist",
     "copy:tests": "cp -R ./tests/ dist/tests/",
+    "lint": "eslint --cache --fix --format codeframe --ext .jsx,.js,.tsx,.ts src",
     "ts:generate": "tsc generated/**/*.ts --target esnext --outDir ./dist --declaration --emitDeclarationOnly"
   },
   "keywords": [],
@@ -21,6 +22,17 @@
   "devDependencies": {
     "@types/glob": "^8.0.0",
     "@types/node": "^18.8.3",
+    "@typescript-eslint/eslint-plugin": "^5.40.1",
+    "@typescript-eslint/parser": "^5.40.1",
+    "eslint": "^8.25.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-standard-with-typescript": "^23.0.0",
+    "eslint-formatter-codeframe": "^7.32.1",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.3.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "prettier": "^2.7.1",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
