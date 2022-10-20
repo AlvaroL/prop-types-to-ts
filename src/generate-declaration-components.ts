@@ -32,13 +32,8 @@ const propToType: Record<string, PropertyType> = {
 const getPropType = (str: string): PropertyType => propToType[str] || PropertyType.ANY;
 
 const getTypeForOneOf = (property = '', values: Array<{ value: string }> = []): string => {
-  const typeName = property[0].toUpperCase() + property.slice(1);
-  if (!fileContent[property]) {
-    fileContent[property] = `export type ${typeName} = ${
-      values.map(({ value }) => `"${value}"`).join(' | ') || 'any'
-    };`;
-  }
-  return typeName;
+  const possibleValues = values.filter(({ value }) => !!value).map(({ value }) => `"${value}"`);
+  return possibleValues.length ? possibleValues.join(' | ') : 'any';
 };
 
 interface Property {
@@ -51,11 +46,14 @@ const isOneOf = (node: Node): boolean => node.type === 'CallExpression' && node.
 
 const getTypeForNode = (prop: Node): Property => {
   if (prop.type === 'SpreadElement') {
-    return { name: '', type: PropertyType.ANY, mandatory: false };
+    return undefined;
   }
 
   const property = prop.key.name;
   const node = prop.value;
+  if (property === 'children') {
+    return { name: property, type: PropertyType.NODE, mandatory: false };
+  }
   try {
     if (isOneOf(node)) {
       return {
@@ -90,8 +88,8 @@ const getTypeForNode = (prop: Node): Property => {
   }
 };
 
-const propertyToString = ({ name, mandatory, type }: Property): string => {
-  return name ? `${name}${mandatory ? '' : '?'}: ${type}` : '';
+const propertyToString = (prop: Property | undefined): string => {
+  return prop ? `${prop.name}${prop.mandatory ? '' : '?'}: ${prop.type}` : '';
 };
 
 const buildInterface = (interfaceName: string, properties: Array<Node>): string => {
