@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf dist generated/*.d.ts",
     "copy:tests": "cp -R ./tests/ dist/tests/",
     "lint": "eslint --cache --fix --format codeframe --ext .jsx,.js,.tsx,.ts src",
     "ts:generate": "tsc generated/**/*.ts --target esnext --outDir ./dist --declaration --emitDeclarationOnly"
