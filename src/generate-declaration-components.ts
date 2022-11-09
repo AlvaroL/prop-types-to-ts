@@ -56,6 +56,23 @@ const getTypesForCollection = (collection: Node[]): PropertyType[] =>
     return getPropType(n.property.name);
   });
 
+const getTypeFor = (node: Node): string => {
+  if (isOneOf(node)) {
+    return getTypeForOneOf(node.arguments[0].elements);
+  } else if (isOneOfType(node)) {
+    return getTypesForCollection(node.arguments[0].elements).join(' | ');
+  } else if (isArrayOf(node)) {
+    return getTypesForCollection(node.arguments).join(' | ');
+  } else if (isExpression(node) && node.callee.property.name === 'shape') {
+    const type = node.arguments[0].properties.reduce((acc: object, n: Node) => {
+      return Object.assign(acc, { [n.key.name]: propToType[n.value.property.name] });
+    }, {});
+
+    return JSON.stringify(type, undefined, 2).replaceAll('"', '');
+  }
+  return getPropType(node.property.name);
+};
+
 const getTypeForNode = (prop: Node): Property => {
   if (prop.type === 'SpreadElement') {
     return undefined;
@@ -67,51 +84,12 @@ const getTypeForNode = (prop: Node): Property => {
     return { name: property, type: PropertyType.NODE, mandatory: false };
   }
   try {
-    if (isOneOf(node)) {
-      return {
-        name: property,
-        mandatory: false,
-        type: getTypeForOneOf(node.arguments[0].elements),
-      };
-    } else if (isOneOfType(node)) {
-      return {
-        name: property,
-        type: getTypesForCollection(node.arguments[0].elements).join(' | '),
-        mandatory: false,
-      };
-    } else if (isArrayOf(node)) {
-      return {
-        name: property,
-        type: getTypesForCollection(node.arguments).join(' | '),
-        mandatory: false,
-      };
-    } else if (isExpression(node) && node.callee.property.name === 'shape') {
-      const type = node.arguments[0].properties.reduce((acc: object, n: Node) => {
-        return Object.assign(acc, { [n.key.name]: propToType[n.value.property.name] });
-      }, {});
-
-      return {
-        name: property,
-        type: JSON.stringify(type, undefined, 2).replaceAll('"', ''),
-        mandatory: false,
-      };
-    } else {
-      if (node.property.name === 'isRequired') {
-        return {
-          name: property,
-          type:
-            node.object.type === 'CallExpression'
-              ? getTypeForOneOf(node.object.arguments[0].elements)
-              : getPropType(node.object.property.name),
-          mandatory: true,
-        };
-      }
-      return {
-        name: property,
-        type: getPropType(node.property.name),
-        mandatory: false,
-      };
-    }
+    const isRequired = node.property && node.property.name === 'isRequired';
+    return {
+      name: property,
+      type: getTypeFor(isRequired ? node.object : node),
+      mandatory: isRequired,
+    };
   } catch (e) {
     console.error(`ERROR getTypeForNode => [${property}]`, e);
     return {
@@ -128,6 +106,7 @@ const propertyToString = (prop: Property | undefined): string => {
 
 const getHookDeclaration = (hookName: string, propsName: string): string =>
   `declare const ${hookName}: (args?: any) => ${propsName}`;
+
 const getInterfaceDeclaration = (interfaceName: string, propsInterfaceName: string): string =>
   `declare const ${interfaceName}: FC<${propsInterfaceName} & StylerProperties>;`;
 
@@ -181,9 +160,6 @@ const generateDeclarationForFile = (filePath: string) => {
       right,
     } = expression;
     if (property.name === 'propTypes') {
-      if (className === 'useDevice') {
-        debugger;
-      }
       fileContent[className] = buildInterface(className, right.properties);
     }
   });
