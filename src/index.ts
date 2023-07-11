@@ -13,8 +13,8 @@ const findParam = (param: string): string =>
     .pop();
 
 const dir = findParam('--dir');
+const out = findParam('--out');
 
-// const out = findParam('--out');
 const initialLoad = {
   stylerProps: StylerProperties,
 };
@@ -26,7 +26,7 @@ const initialLoad = {
       fs.writeFileSync(filePath, Object.values(fileContent).join('\n'));
       fs.copyFile(
         `${__dirname}/../generated/index.d.ts`,
-        `/Users/albareto/code/user-area-front/node_modules/@lookiero/aurora/index.d.ts`,
+        out,
         (err) => (err ? console.error(err) : console.log('done copying file')),
       );
     })
