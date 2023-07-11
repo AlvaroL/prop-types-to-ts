@@ -26,7 +26,7 @@ const initialLoad = {
       fs.writeFileSync(filePath, Object.values(fileContent).join('\n'));
       fs.copyFile(
         `${__dirname}/../generated/index.d.ts`,
-        out,
+        `${out}/index.d.ts`,
         (err) => (err ? console.error(err) : console.log('done copying file')),
       );
     })
